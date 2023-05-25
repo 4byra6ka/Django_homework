@@ -7,6 +7,7 @@ NULLABLE = {'blank': True, 'null':True}
 class Category(models.Model):
     name = models.CharField(max_length=100, verbose_name='Наименование')
     description = models.CharField(max_length=100, verbose_name='Описание')
+    #created_at = models.DateTimeField(verbose_name='Дата создания', auto_now_add=True)
 
     def __str__(self):
         return f'{self.name}'
