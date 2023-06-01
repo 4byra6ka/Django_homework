@@ -54,20 +54,18 @@ def add_product(request):
         'add_items': None,
         'title': f'Добавить товар',
     }
-    products_list = Product.objects.all()
-    category_list = Category.objects.all()
-    if request.method == 'POST' and request.FILES['image']:
-        image = request.FILES['image']
-        fs = FileSystemStorage()
-        filename = fs.save(f'products/{image.name}', image)
-        uploaded_file_url = fs.url(filename)
+    if request.method == 'POST':
         product_item = Product(
             name=request.POST.get('name'),
             description=request.POST.get('description'),
-            image=filename,
             category=Category.objects.get(name=request.POST.get('category')),
             price=request.POST.get('price'))
+        if request.POST.get('image') != '':
+            image = request.FILES['image']
+            fs = FileSystemStorage()
+            filename = fs.save(f'products/{image.name}', image)
+            uploaded_file_url = fs.url(filename)
+            product_item.image = filename
         product_item.save()
         context['add_items'] = True
-
     return render(request, 'catalog/add_product.html', context=context)
