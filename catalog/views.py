@@ -1,8 +1,8 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.urls import reverse_lazy
 from django.views import generic
 
-from catalog.models import Product, Category
+from catalog.models import Product, Category, Blog
 from django.core.paginator import Paginator
 from django.core.files.storage import FileSystemStorage
 
@@ -105,7 +105,72 @@ def contact(request):
     return render(request, 'catalog/contact.html', context)
 
 
+class BlogListView(generic.ListView):
+    model = Blog
+    extra_context = {
+        'title': 'Блог'
+    }
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        queryset = queryset.filter(is_published=True)
+        return queryset
 
 
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        all_product = Product.objects.all()
+        context['all_product_list'] = all_product
+        return context
 
 
+class BlogDetailView(generic.DetailView):
+    model = Blog
+
+    def get_context_data(self, *args, **kwargs):
+        blog = Blog.objects.get(pk=self.object.pk)
+        blog.count_views += 1
+        blog.save()
+        context = super().get_context_data(*args, **kwargs)
+        all_product = Product.objects.all()
+        context['all_product_list'] = all_product
+        context['title'] = context['object']
+        return context
+
+
+class BlogCreateView(generic.CreateView):
+    model = Blog
+    extra_context = {
+        'title': 'Добавить пост'
+    }
+    fields = ('title', 'content', 'image', 'is_published',)
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        all_product = Product.objects.all()
+        context['all_product_list'] = all_product
+        return context
+
+
+class BlogUpdateView(generic.UpdateView):
+    model = Blog
+    fields = ('title', 'content', 'image', 'is_published',)
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        all_product = Product.objects.all()
+        context['all_product_list'] = all_product
+        context['title'] = context['object']
+        return context
+
+
+class BlogDeleteView(generic.DeleteView):
+    model = Blog
+    success_url = reverse_lazy('catalog:blogs')
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        all_product = Product.objects.all()
+        context['all_product_list'] = all_product
+        context['title'] = context['object']
+        return context
