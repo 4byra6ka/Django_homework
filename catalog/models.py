@@ -1,3 +1,5 @@
+from django import forms
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse
 from pytils.translit import slugify
@@ -20,9 +22,9 @@ class Category(models.Model):
 
 class Product(models.Model):
     name = models.CharField(max_length=100, verbose_name='Наименование')
-    description = models.CharField(max_length=300, verbose_name='Описание')
+    description = models.TextField(verbose_name='Описание')
     image = models.ImageField(upload_to='products/', verbose_name='Изображение', **NULLABLE)
-    category = models.ForeignKey('Category', on_delete=models.CASCADE)
+    category = models.ForeignKey('Category', on_delete=models.CASCADE, verbose_name='Категория товара')
     price = models.IntegerField(verbose_name='цена за покупку')
     create_date = models.DateTimeField(verbose_name='дата создания',auto_now_add=True)
     last_change_date = models.DateTimeField(verbose_name='дата последнего изменения', auto_now=True)
@@ -33,9 +35,32 @@ class Product(models.Model):
     def get_absolute_url(self):
         return reverse('catalog:product', args=[str(self.id)])
 
+    def active_version(self):
+        return self.version_set.get(is_active=True)
+
     class Meta:
         verbose_name = 'товар'
         verbose_name_plural = 'товары'
+
+
+class Version(models.Model):
+
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name='Продукт')
+    number = models.IntegerField(verbose_name='Номер версии')
+    title = models.CharField(max_length=100, verbose_name='Название версии')
+    is_active = models.BooleanField(default=False, verbose_name='Признак текущей версии')
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        verbose_name = 'версия'
+        verbose_name_plural = 'версии'
+
+    def clean(self) -> None:
+        super().clean()
+        if Version.objects.filter(product=self.product, is_active=True).get() != self and self.is_active :
+            raise forms.ValidationError('Ты можешь установить только одну активную версию.')
 
 
 class Blog(models.Model):
