@@ -49,14 +49,3 @@ class VersionForm(StyleFormMixin, forms.ModelForm):
     class Meta:
         model = Version
         fields = '__all__'
-
-
-    # def clean(self) -> None:
-    #     super().clean()
-    #     if Version.objects.filter(
-    #             product_id=self.cleaned_data['product'],
-    #             is_active=True
-    #     ).exists():
-    #         raise ValidationError('You can set only one active version.')
-    #     cleaned_is_active = self.cleaned_data['is_active']
-    #     return cleaned_is_active
