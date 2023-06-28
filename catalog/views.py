@@ -1,3 +1,6 @@
+from django.contrib.auth.mixins import PermissionRequiredMixin
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
 from django.forms import inlineformset_factory
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse_lazy
@@ -30,12 +33,16 @@ class ProductDetailView(generic.DetailView):
         all_product = Product.objects.all()
         context['all_product_list'] = all_product
         context['title'] = context['object']
+        context['is_edit'] = True
+        if self.object.owner != self.request.user and not self.request.user.is_superuser and not self.request.user.is_staff:
+            context['is_edit'] = False
         return context
 
 
-class ProductCreateView(generic.CreateView):
+class ProductCreateView(PermissionRequiredMixin, generic.CreateView):
     model = Product
     form_class = ProductForm
+    permission_required = 'catalog.add_product'
     extra_context = {
         'title': 'Добавить товар'
     }
@@ -55,9 +62,10 @@ class ProductCreateView(generic.CreateView):
         return super().form_valid(form)
 
 
-class ProductUpdateView(generic.UpdateView):
+class ProductUpdateView(PermissionRequiredMixin, generic.UpdateView):
     model = Product
     form_class = ProductForm
+    permission_required = ['catalog.change_product']
     # fields = ('name', 'description', 'image', 'category', 'price')
 
     def get_context_data(self, *args, **kwargs):
@@ -78,7 +86,8 @@ class ProductUpdateView(generic.UpdateView):
         version_is_active = 0
         formset = self.get_context_data()['formset']
         self.object = form.save()
-        self.object.owner = self.request.user
+        if not self.request.user.is_superuser and not self.request.user.is_staff:
+            self.object.owner = self.request.user
         self.object.save()
         if formset.is_valid():
             formset.instance = self.object
@@ -88,9 +97,10 @@ class ProductUpdateView(generic.UpdateView):
             return super().form_invalid(form)
 
 
-class ProductDeleteView(generic.DeleteView):
+class ProductDeleteView(PermissionRequiredMixin, generic.DeleteView):
     model = Product
     success_url = reverse_lazy('catalog:index')
+    permission_required = 'catalog.delete_product'
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
